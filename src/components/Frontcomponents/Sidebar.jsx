@@ -36,19 +36,19 @@ const Sidebar = () => {
         </li>
         <li
           className="p-4 hover:bg-gray-700 cursor-pointer"
-          onClick={() => navigate("/poscounterpage")}
+          onClick={() => navigate("/itemsdetails")}
         >
-          POS Counter
+          Invoice Details
         </li>
         <li
           className="p-4 hover:bg-gray-700 cursor-pointer"
-          onClick={() => navigate("/allbillspage")}
+          onClick={() => navigate("/invoicedetails")}
         >
-          POS Bills
+          Items Details
         </li>
         <li
           className="p-4 hover:bg-gray-700 cursor-pointer"
-          onClick={() => navigate("/allexpensespage")}
+          onClick={() => navigate("/itemsdetails")}
         >
           Gym Expenses
         </li>

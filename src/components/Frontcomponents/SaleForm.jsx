@@ -3,10 +3,9 @@ import axios from "axios";
 import { getItem } from "../api";
 import { useDispatch } from "react-redux";
 import { setInvoiceData } from "../Redux/invoiceReducer.js"; // Adjust path if needed
+import { postItem } from "../api";
 import { useSelector } from "react-redux";
-
-
-
+import { updateItem } from "../api"; // Import the update function
 
 const SaleForm = () => {
   const [customerName, setCustomerName] = useState("");
@@ -19,6 +18,7 @@ const SaleForm = () => {
   const [selectedItem, setSelectedItem] = useState(null); // Selected item for adding to the invoice
   const [invoiceItems, setInvoiceItems] = useState([]); // Items added to the invoice
   const [balance, setBalance] = useState(0);
+  const [quantity, setQuantity] = useState(1);
 
   const dispatch = useDispatch();
 
@@ -27,14 +27,14 @@ const SaleForm = () => {
     customerName && phoneNumber && invoiceAmount > 0 && receivedAmount >= 0;
 
   // Handle form submission
-  const handleSubmit = (e) => {
-    e.preventDefault(); // Prevent page reload
-  
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
     if (invoiceItems.length === 0) {
       alert("Please add at least one item to the invoice.");
       return;
     }
-  
+
     const invoiceData = {
       customerName,
       phoneNumber,
@@ -42,19 +42,37 @@ const SaleForm = () => {
       receivedAmount,
       date,
       serialNumb,
-      invoiceItems, // Contains selected items
+      invoiceItems,
       balance: totalSalePrice - receivedAmount,
+      quantity,
     };
-  
-    // Dispatch invoice data to Redux
-    dispatch(setInvoiceData(invoiceData));
-  
-    // Clear form fields
-    setCustomerName("");
-    setPhoneNumber("");
-    setInvoiceAmount(0);
-    setReceivedAmount(0);
-    setInvoiceItems([]); // Clear added items
+
+    try {
+      // Send invoice data to backend
+      await postItem("invoice/create", invoiceData);
+      console.log("Invoice saved successfully.");
+
+      // Update inventory after invoice is created
+      await handleSaveChanges(); // <-- Now only called once
+
+      // Update serial number AFTER successful submission
+      await fetchSerialNumber(true);
+
+      // Dispatch to Redux store
+      dispatch(setInvoiceData(invoiceData));
+
+      // Clear form fields
+      setCustomerName("");
+      setPhoneNumber("");
+      setReceivedAmount(0);
+      setInvoiceItems([]);
+      setSelectedItem(null);
+      setQuantity(1);
+
+      console.log("Form state reset successfully."); // Debugging
+    } catch (error) {
+      console.error("Failed to save invoice:", error);
+    }
   };
 
   const invoiceData = useSelector((state) => state.invoice);
@@ -62,73 +80,81 @@ const SaleForm = () => {
   useEffect(() => {
     console.log("Updated Redux State:", invoiceData);
   }, [invoiceData]); // Log when invoiceData changes
-  
-
-  const saveInvoiceToRedux = () => {
-    if (invoiceItems.length === 0) {
-      alert("Please add at least one item to save the invoice.");
-      return;
-    }
-  
-    dispatch(setInvoiceData({
-      customerName,
-      phoneNumber,
-      invoiceAmount: totalSalePrice,
-      receivedAmount,
-      date,
-      serialNumb,
-      invoiceItems, // Send all selected items
-      balance: totalSalePrice - receivedAmount,
-    }));
-    console.log(invoiceData);
-    
-    alert("Invoice data saved to Redux!");
-  };
-  
 
   // Function to filter out items with empty itemName
   const filteredItems = items.filter(
     (item) => item.itemName && item.itemName.trim() !== ""
   );
+  const handleUpdateItem = async (id, updatedData) => {
+    try {
+      const response = await updateItem("item/items", id, updatedData);
+      console.log("Item updated successfully:", response);
+      alert("Item updated successfully!");
+
+      // Optionally, refresh the item list after update
+      fetchItems();
+    } catch (error) {
+      console.error("Error updating item:", error);
+      alert("Failed to update item.");
+    }
+  };
+  const handleSaveChanges = async () => {
+    try {
+      // Create an array of update promises for each item
+      const updatePromises = invoiceItems.map(async (item) => {
+        // Fetch current item data to get the latest quantity
+        const fetchedItem = items.find((i) => i._id === item._id);
+
+        if (!fetchedItem) {
+          console.error(`Item with ID ${item._id} not found in inventory.`);
+          return;
+        }
+
+        const updatedQuantity = Math.max(
+          fetchedItem.itemQuantity - item.itemQuantity,
+          0
+        ); // Prevent negative values
+
+        const updatedData = {
+          itemQuantity: updatedQuantity,
+        };
+
+        // Call update API
+        return updateItem("item/items", item._id, updatedData);
+      });
+
+      // Wait for all updates to complete
+      await Promise.all(updatePromises);
+
+      console.log("All items updated successfully."); // Only one log message
+      fetchItems(); // Refresh items after update
+    } catch (error) {
+      console.error("Error updating items:", error);
+    }
+  };
 
   // Function to calculate total sale price
   const totalSalePrice = invoiceItems.reduce(
     (acc, item) => acc + (parseFloat(item.salePrice) || 0),
     0
   );
-  useEffect(()=>{
+  useEffect(() => {
     setInvoiceAmount(totalSalePrice);
-    console.log(totalSalePrice);
-  },[totalSalePrice])
+    console.log("Total Sale Price Updated:", totalSalePrice); // Debugging
+  }, [totalSalePrice]);
 
   useEffect(() => {
     setBalance(totalSalePrice - receivedAmount);
+    console.log("Balance Updated:", totalSalePrice - receivedAmount); // Debugging
   }, [receivedAmount]);
-
-  // Function to save selected items to localStorage
-  const saveToLocalStorage = (items) => {
-    localStorage.setItem("invoiceItems", JSON.stringify(items));
-  };
-
-  // Load selected items from localStorage when the component mounts
-  useEffect(() => {
-    const savedItems = localStorage.getItem("invoiceItems");
-    if (savedItems) {
-      setInvoiceItems(JSON.parse(savedItems));
-    }
-  }, []);
-
-  // Update localStorage whenever invoiceItems change
-  useEffect(() => {
-    saveToLocalStorage(invoiceItems);
-  }, [invoiceItems]);
 
   // Add selected item to invoice items list
   const handleAddItemToInvoice = () => {
     if (selectedItem) {
       setInvoiceItems((prevItems) => {
-        const updatedItems = [...prevItems, selectedItem];
-        saveToLocalStorage(updatedItems);
+        const updatedItem = { ...selectedItem, itemQuantity: quantity }; // Replace itemQuantity with quantity
+        const updatedItems = [...prevItems, updatedItem];
+        console.log("Item Added to Invoice:", updatedItem); // Debugging
         return updatedItems;
       });
       setSelectedItem(null); // Reset selected item
@@ -143,6 +169,7 @@ const SaleForm = () => {
         const fetchedDate = response.data.date;
         const formattedDate = new Date(fetchedDate).toISOString().split("T")[0];
         setDate(formattedDate);
+        console.log("Date Fetched:", formattedDate); // Debugging
       } catch (error) {
         console.error("Error fetching date:", error);
       }
@@ -164,19 +191,31 @@ const SaleForm = () => {
     fetchItems();
   }, []);
 
-  // Fetch serial number from API
   useEffect(() => {
-    const fetchSerialNumber = async () => {
-      try {
-        const data = await getItem("serialNumber/getSerialNumber");
-        console.log("Serial Number Data:", data);
-        setSerialNumb(data.serialNumber);
-      } catch (error) {
-        console.error("Error fetching serial number:", error);
-      }
-    };
-    fetchSerialNumber();
+    fetchSerialNumber(); // Fetch only on first load
   }, []);
+
+  // Fetch serial number from API
+  const fetchSerialNumber = async (isUpdate = false) => {
+    try {
+      // Check localStorage to avoid changing serial number on refresh
+      const storedSerialNumber = localStorage.getItem("serialNumber");
+      if (!isUpdate && storedSerialNumber) {
+        setSerialNumb(parseInt(storedSerialNumber, 10)); // Keep the previous serial number
+        return;
+      }
+
+      // Fetch new serial number only if it's an update or first-time load
+      const data = await getItem("serialNumber/getSerialNumber");
+      console.log("Fetched Serial Number:", data.serialNumber);
+      setSerialNumb(data.serialNumber);
+
+      // Store in localStorage
+      localStorage.setItem("serialNumber", data.serialNumber);
+    } catch (error) {
+      console.error("Error fetching serial number:", error);
+    }
+  };
 
   // Handle item selection from dropdown
   const handleItemSelect = (e) => {
@@ -185,24 +224,18 @@ const SaleForm = () => {
       (item) => item.itemName === selectedItemName
     );
     setSelectedItem(selectedItem);
+    console.log("Item Selected:", selectedItem); // Debugging
   };
-  const handleDeleteTableItem = (index) => {
-    setInvoiceItems((prevItems) => prevItems.filter((_, i) => i !== index));
+  const handleDeleteTableItem = (indexToRemove) => {
+    setInvoiceItems((prevItems) =>
+      prevItems.filter((_, index) => index !== indexToRemove)
+    );
   };
-  
-
-  // // Add selected item to invoice items list
-  // const handleAddItemToInvoice = () => {
-  //   if (selectedItem) {
-  //     setInvoiceItems([...invoiceItems, selectedItem]);
-  //     setSelectedItem(null);  // Reset selected item
-  //   }
-  // };
 
   return (
     <form
       onSubmit={handleSubmit}
-      className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-md"
+      className="w-auto mx-auto p-6 bg-white rounded-lg shadow-md"
     >
       {/* Header */}
       <div className="grid grid-cols-2 gap-4 items-start">
@@ -274,6 +307,29 @@ const SaleForm = () => {
             </option>
           ))}
         </select>
+        <div className="flex gap-3 justify-center items-center my-5">
+          <label htmlFor="">Select Quantity</label>
+          <label htmlFor="">{selectedItem?.itemQuantity}</label>
+          <input
+            type="number"
+            className="p-2 border-red-400 border-2 rounded-md"
+            value={quantity}
+            onChange={(e) => {
+              let value = parseInt(e.target.value, 10);
+
+              if (isNaN(value)) {
+                setQuantity(""); // Reset input if it's not a number
+              } else if (value < 1) {
+                setQuantity(1); // Enforce minimum value
+              } else if (value > selectedItem?.itemQuantity) {
+                setQuantity(selectedItem?.itemQuantity); // Enforce maximum value
+              } else {
+                setQuantity(value); // Set valid value
+              }
+            }}
+          />
+          <h1>{quantity}</h1>
+        </div>
 
         <button
           type="button"
@@ -318,9 +374,7 @@ const SaleForm = () => {
         <span>Total:</span>
         <span>Rs {totalSalePrice.toFixed(2)}</span>{" "}
         <span>Rs {invoiceData.customerName}</span>{" "}
-
         <span>Rs {invoiceAmount.toFixed(2)}</span>{" "}
-
         {/* Ensures two decimal places */}
       </div>
 
@@ -346,6 +400,7 @@ const SaleForm = () => {
               <th className="border p-2 text-left">Item Name</th>
               <th className="border p-2 text-left">Category</th>
               <th className="border p-2 text-left">Price</th>
+              <th className="border p-2 text-left">Quantiy</th>
               <th className="border p-2 text-left">Action</th>
             </tr>
           </thead>
@@ -355,9 +410,14 @@ const SaleForm = () => {
                 <td className="border p-2">{item.itemName}</td>
                 <td className="border p-2">{item.category}</td>
                 <td className="border p-2">{item.salePrice}</td>
+                <td className="border p-2">{item.itemQuantity}</td>
                 <td className="border p-2">
                   <button
-                    onClick={() => handleDeleteTableItem(index)}
+                    type="button" // ✅ Prevents default form submission
+                    onClick={(e) => {
+                      e.preventDefault(); // ✅ Stops form from submitting
+                      handleDeleteTableItem(index);
+                    }}
                     className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-700"
                   >
                     Delete
@@ -381,14 +441,6 @@ const SaleForm = () => {
       >
         📅 Create Your First Invoice
       </button>
-      <button
-  type="button"
-  onClick={saveInvoiceToRedux}
-  className="mt-4 px-4 py-2 bg-green-600 text-white rounded-md"
->
-  Save Invoice Data
-</button>
-
     </form>
   );
 };

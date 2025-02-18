@@ -22,6 +22,11 @@ const schema = yup.object().shape({
         return value < this.parent.salePrice;
       }
     ),
+    itemQuantity: yup
+    .number()
+    .typeError("Quantity must be a number")
+    .default(1)
+    .min(1, "Quantity must be at least 1"),
 });
 
 const FloatingLabelInput = ({ label, value, onChange, onBlur, error }) => {
@@ -71,6 +76,7 @@ const ItemForm = () => {
       category: "",
       salePrice: "",
       purchasePrice: "",
+      itemQuantity: 1,
     },
   });
 
@@ -179,6 +185,13 @@ const ItemForm = () => {
           control={control}
           render={({ field }) => (
             <FloatingLabelInput label="Purchase Price" {...field} error={errors.purchasePrice} />
+          )}
+        />
+        <Controller
+          name="itemQuantity"
+          control={control}
+          render={({ field }) => (
+            <FloatingLabelInput label="Item Quantity" {...field} error={errors.itemQuantity} />
           )}
         />
 

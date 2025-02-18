@@ -46,9 +46,9 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // Routes
-app.use("/api/invoices", invoiceRoutes);
 app.use("/api/serialNumber", serialNumberRoute);
 app.use("/api/item", itemRoutes);
+app.use("/api/invoice", invoiceRoutes);
 
 
 app.get("/api/date", (req, res) => {

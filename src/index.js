@@ -14,8 +14,8 @@ import Sale from "./components/pages/Sale.jsx";
 // import OrdersPage from "./components/pages/OrdersPage.jsx";
 import "./App.css";
 // import FormPage from "./components/pages/FormPage.jsx";
-import POSCounterPage from "./components/pages/POSCounterPage.jsx";
-import AllBillsPage from "./components/pages/AllBillsPage.jsx";
+import ItemsDetails from "./components/pages/ItemsDetails.jsx";
+import ItemsPage from "./components/pages/ItemsPage.jsx";
 import AllExpensesPage from "./components/pages/AllExpensesPage.jsx";
 import AllTransactionsPage from "./components/pages/AllTransactionsPage.jsx";
 import StaffPage from "./components/pages/StaffPage.jsx";
@@ -48,8 +48,8 @@ root.render(
           {/* <Route path="/formpage" element={<FormPage />} /> */}
           <Route path="/item" element={<Item />} />
           <Route path="/sale" element={<Sale />} />
-          <Route path="/poscounterpage" element={<POSCounterPage />} />
-          <Route path="/allbillspage" element={<AllBillsPage />} />
+          <Route path="/invoicedetails" element={<ItemsPage />} />
+          <Route path="/itemsdetails" element={<ItemsDetails />} />
           <Route path="/allexpensespage" element={<AllExpensesPage />} />
           <Route
             path="/alltransactionspage"

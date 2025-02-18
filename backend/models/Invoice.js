@@ -1,52 +1,23 @@
 const mongoose = require("mongoose");
 
 const InvoiceSchema = new mongoose.Schema({
-  items: [
+  customerName: { type: String, required: true },
+  phoneNumber: { type: String, required: true },
+  invoiceAmount: { type: Number, required: true },
+  receivedAmount: { type: Number, required: true },
+  date: { type: String, required: true },
+  serialNumb: { type: Number, required: true },
+  invoiceItems: [
     {
-      description: String,
-      riceRate: Number,
-      safiWeight: Number,
-      emptyBag: Number,
-      quantity: Number,
-      weight: Number,
-      kgWeight: Number,
-      unit: String,
+      itemName: { type: String, required: true },
+      category: { type: String, required: true },
+      salePrice: { type: Number, required: true },
     },
   ],
-
-  notes: String,
-  terms: String,
-  vehicleReg: String,
-  transpExp: Number,
-  amountPaid: Number,
-  serialNumb: String,
-  billTo: String,
-  phone: String,
-  date: Date,
-  bardanaList: [
-    {
-      bardanaDesc: String,
-      bardanaQty: Number,
-      addBardana: Number,
-      totalBardana: Number,
-    },
-  ],
-  slaeList: [
-    {
-      slaeDesc: String,
-      slaeQty: Number,
-      labourCost: Number,
-      totalSlae: Number,
-    },
-  ],
-  prevDue: Number,
-  prevDueAction: { type: String, enum: ["+", "-"], default: "+" },
-  transpAction: { type: String, enum: ["+", "-"], default: "+" },
-  brokery: Number,
-  brokValue: Number,
-  total: Number,
-  balanceDue: Number,
-  brokAddSub: String,
+  balance: { type: Number, required: true },
+  quantity: {type: Number, required: true}
 });
 
-module.exports = mongoose.model("Invoice", InvoiceSchema);
+const Invoice = mongoose.model("Invoice", InvoiceSchema);
+
+module.exports = Invoice;

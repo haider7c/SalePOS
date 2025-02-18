@@ -26,3 +26,26 @@ export const getItem = async (endpoint) => {
     throw error;
   }
 };
+
+
+// Function to UPDATE (PUT) data
+export const updateItem = async (endpoint, id, data) => {
+  try {
+    const response = await axios.put(`${BASE_URL}/${endpoint}/${id}`, data);
+    return response.data;
+  } catch (error) {
+    console.error(`Error in PUT to ${endpoint}:`, error);
+    throw error;
+  }
+};
+
+// Function to DELETE data
+export const deleteItem = async (endpoint, id) => {
+  try {
+    const response = await axios.delete(`${BASE_URL}/${endpoint}/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error in DELETE from ${endpoint}:`, error);
+    throw error;
+  }
+};

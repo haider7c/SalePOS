@@ -1,96 +1,83 @@
 import React, { useEffect, useState } from "react";
-import { useSelector, useDispatch } from "react-redux";
-import { fetchInvoices } from "../Redux/invoiceReducer.js";
-import NavBar from "./NavBar.jsx";
-import Footer from "./Footer.jsx";
-import InvoiceTemp from "./InvoiceTemp.jsx";
-import { PDFDownloadLink, PDFViewer } from "@react-pdf/renderer";
-import Template2 from "../pages/Templates/Template2.jsx";
+import { getItem, deleteItem } from "../api";
+import SaleForm from "./SaleForm.jsx"; // Importing the form for editing
 
 const InvoiceList = () => {
-  const dispatch = useDispatch();
-  const { invoices, error } = useSelector((state) => state.Invoice);
-
+  const [invoices, setInvoices] = useState([]);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
-  const [showPDFLink, setShowPDFLink] = useState(false);
 
-  useEffect(() => {
-    dispatch(fetchInvoices());
-  }, [dispatch]);
-
-  const handleInvoiceClick = (invoice) => {
-    setSelectedInvoice(invoice);
-    setShowPDFLink(false); // Reset PDF link visibility when a new invoice is selected
+  // Fetch all invoices from API
+  const fetchInvoices = async () => {
+    try {
+      const data = await getItem("invoice/all");
+      setInvoices(data);
+    } catch (error) {
+      console.error("Error fetching invoices:", error);
+    }
   };
 
-  const handleDownloadClick = () => {
-    setShowPDFLink(true);
+  useEffect(() => {
+    fetchInvoices();
+  }, []);
+
+  // Handle Delete Invoice
+  const handleDeleteInvoice = async (id) => {
+    if (window.confirm("Are you sure you want to delete this invoice?")) {
+      try {
+        await deleteItem("invoice", id);
+        fetchInvoices(); // Refresh the list
+      } catch (error) {
+        console.error("Error deleting invoice:", error);
+      }
+    }
+  };
+
+  // Handle Edit Invoice
+  const handleEditInvoice = (invoice) => {
+    setSelectedInvoice(invoice);
   };
 
   return (
-    <div>
-      <NavBar />
-      <div className="min-h-screen flex flex-row top-0">
-        {/* Left Section */}
-        <div className="flex flex-col w-1/3 border-r border-gray-300 p-4">
-          <h1 className="text-lg font-bold mb-4">Invoices</h1>
-          {error && <p className="text-red-500">Error: {error}</p>}
-          <ul>
-            {invoices && invoices.length > 0 ? (
-              invoices.map((invoice, index) => (
-                <li
-                  key={invoice.id || `invoice-${index}`}
-                  className="border-b py-2 cursor-pointer hover:bg-gray-100"
-                  onClick={() => handleInvoiceClick(invoice)}
-                >
-                  <strong>{index + 1}.</strong> Invoice #{invoice.serialNumb}:{" "}
-                  {invoice.total} ({invoice.billTo})
-                </li>
-              ))
-            ) : (
-              <p className="text-gray-500">No invoices available.</p>
-            )}
-          </ul>
-        </div>
+    <div className="max-w-3xl mx-auto mt-6 p-4 bg-white rounded-lg shadow-md">
+      <h2 className="text-lg font-semibold">Invoices</h2>
 
-        {/* Right Section */}
-        <div className="flex flex-col w-2/3 items-center justify-center p-4">
-          {selectedInvoice ? (
-            <div className="w-full flex flex-col items-center">
-              {/* <InvoiceTemp invoiceData={selectedInvoice} /> */}
-              <div>
-                <PDFViewer style={{ height: "650px", width: "550px" }}>
-                  <Template2 data={selectedInvoice} />
-                </PDFViewer>
-              </div>
-              <div className="mt-4 text-center">
-                <button
-                  onClick={handleDownloadClick}
-                  className="px-10 py-3 bg-blue-500 text-white rounded-md w-60 text-center hover:bg-blue-600"
-                >
-                  Generate PDF
-                </button>
-                {showPDFLink && (
-                  <div className="mt-4">
-                    <PDFDownloadLink
-                      document={<Template2 data={selectedInvoice} />}
-                      fileName={selectedInvoice.billTo || "invoice.pdf"}
-                      className="px-10 py-3 bg-customGreen text-white rounded-md w-60 text-center"
-                    >
-                      {({ blob, url, loading, error }) =>
-                        loading ? "Loading document..." : "Download PDF!"
-                      }
-                    </PDFDownloadLink>
-                  </div>
-                )}
-              </div>
-            </div>
-          ) : (
-            <p className="text-gray-500">Select an invoice to view details.</p>
-          )}
-        </div>
-      </div>
-      <Footer />
+      {selectedInvoice ? (
+        <SaleForm invoiceData={selectedInvoice} setSelectedInvoice={setSelectedInvoice} />
+      ) : (
+        <table className="min-w-full mt-4 border-collapse">
+          <thead>
+            <tr>
+              <th className="border p-2 text-left">Customer</th>
+              <th className="border p-2 text-left">Amount</th>
+              <th className="border p-2 text-left">Date</th>
+              <th className="border p-2 text-left">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {invoices.map((invoice) => (
+              <tr key={invoice._id}>
+                <td className="border p-2">{invoice.customerName}</td>
+                <td className="border p-2">Rs {invoice.invoiceAmount}</td>
+                <td className="border p-2">{invoice.date}</td>
+                <td className="border p-2 flex space-x-2">
+                  <button
+                    onClick={() => handleEditInvoice(invoice)}
+                    className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-700"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDeleteInvoice(invoice._id)}
+                    className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-700"
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 };
