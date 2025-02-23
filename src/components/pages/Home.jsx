@@ -6,7 +6,7 @@ import SearchMember from "../Frontcomponents/SearchMember.jsx";
 
 const Home = () => {
   return (
-    <div className="flex">
+    <div className="flex min-h-screen">
       {/* Sidebar */}
       <Sidebar />
 

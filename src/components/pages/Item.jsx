@@ -4,7 +4,7 @@ import Sidebar from "../Frontcomponents/Sidebar.jsx";
 
 const Item = () => {
   return (
-    <div className="flex h-screen">
+    <div className="flex min-h-screen">
       {/* Sidebar */}
       <Sidebar />
 

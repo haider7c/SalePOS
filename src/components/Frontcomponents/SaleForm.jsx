@@ -18,7 +18,7 @@ const SaleForm = () => {
   const [selectedItem, setSelectedItem] = useState(null); // Selected item for adding to the invoice
   const [invoiceItems, setInvoiceItems] = useState([]); // Items added to the invoice
   const [balance, setBalance] = useState(0);
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState("");
 
   const dispatch = useDispatch();
 
@@ -44,7 +44,7 @@ const SaleForm = () => {
       serialNumb,
       invoiceItems,
       balance: totalSalePrice - receivedAmount,
-      quantity,
+      // quantity,
     };
 
     try {
@@ -85,59 +85,15 @@ const SaleForm = () => {
   const filteredItems = items.filter(
     (item) => item.itemName && item.itemName.trim() !== ""
   );
-  const handleUpdateItem = async (id, updatedData) => {
-    try {
-      const response = await updateItem("item/items", id, updatedData);
-      console.log("Item updated successfully:", response);
-      alert("Item updated successfully!");
 
-      // Optionally, refresh the item list after update
-      fetchItems();
-    } catch (error) {
-      console.error("Error updating item:", error);
-      alert("Failed to update item.");
-    }
-  };
-  const handleSaveChanges = async () => {
-    try {
-      // Create an array of update promises for each item
-      const updatePromises = invoiceItems.map(async (item) => {
-        // Fetch current item data to get the latest quantity
-        const fetchedItem = items.find((i) => i._id === item._id);
-
-        if (!fetchedItem) {
-          console.error(`Item with ID ${item._id} not found in inventory.`);
-          return;
-        }
-
-        const updatedQuantity = Math.max(
-          fetchedItem.itemQuantity - item.itemQuantity,
-          0
-        ); // Prevent negative values
-
-        const updatedData = {
-          itemQuantity: updatedQuantity,
-        };
-
-        // Call update API
-        return updateItem("item/items", item._id, updatedData);
-      });
-
-      // Wait for all updates to complete
-      await Promise.all(updatePromises);
-
-      console.log("All items updated successfully."); // Only one log message
-      fetchItems(); // Refresh items after update
-    } catch (error) {
-      console.error("Error updating items:", error);
-    }
-  };
-
-  // Function to calculate total sale price
   const totalSalePrice = invoiceItems.reduce(
-    (acc, item) => acc + (parseFloat(item.salePrice) || 0),
+    (acc, item) =>
+      acc +
+      (parseFloat(item.salePrice) || 0) *
+        (parseInt(item.itemQuantity, 10) || 1),
     0
   );
+
   useEffect(() => {
     setInvoiceAmount(totalSalePrice);
     console.log("Total Sale Price Updated:", totalSalePrice); // Debugging
@@ -151,12 +107,22 @@ const SaleForm = () => {
   // Add selected item to invoice items list
   const handleAddItemToInvoice = () => {
     if (selectedItem) {
+      let validQuantity = quantity;
+
+      // Ensure quantity is at least 1
+      if (!validQuantity || validQuantity < 1) {
+        validQuantity = 1;
+        setQuantity(1); // Update the state as well
+      }
+
       setInvoiceItems((prevItems) => {
-        const updatedItem = { ...selectedItem, itemQuantity: quantity }; // Replace itemQuantity with quantity
+        const updatedItem = { ...selectedItem, itemQuantity: validQuantity };
         const updatedItems = [...prevItems, updatedItem];
         console.log("Item Added to Invoice:", updatedItem); // Debugging
+        setQuantity("");
         return updatedItems;
       });
+
       setSelectedItem(null); // Reset selected item
     }
   };
@@ -189,7 +155,59 @@ const SaleForm = () => {
       }
     };
     fetchItems();
-  }, []);
+  }, [handleSubmit]);
+
+  const handleUpdateItem = async (id, updatedData) => {
+    try {
+      const response = await updateItem("item/items", id, updatedData);
+      console.log("Item updated successfully:", response);
+      alert("Item updated successfully!");
+
+      // Optionally, refresh the item list after update
+      fetchItems();
+    } catch (error) {
+      console.error("Error updating item:", error);
+      alert("Failed to update item.");
+    }
+  };
+  const handleSaveChanges = async () => {
+    try {
+      // Create an array of update promises for each item
+      const updatePromises = invoiceItems.map(async (item) => {
+        // Fetch current item data to get the latest quantity
+        const fetchedItem = items.find((i) => i._id === item._id);
+  
+        if (!fetchedItem) {
+          console.error(`Item with ID ${item._id} not found in inventory.`);
+          return;
+        }
+  
+        const updatedQuantity = Math.max(
+          fetchedItem.itemQuantity - item.itemQuantity,
+          0
+        ); // Prevent negative values
+  
+        const updatedData = {
+          itemQuantity: updatedQuantity,
+        };
+  
+        // Call update API
+        return updateItem("item/items", item._id, updatedData);
+      });
+  
+      // Wait for all updates to complete
+      await Promise.all(updatePromises);
+  
+      console.log("All items updated successfully.");
+  
+      // Fetch updated items after all updates have been done
+      fetchItems(); // Refresh items after update
+  
+    } catch (error) {
+      console.error("Error updating items:", error);
+    }
+  };
+  
 
   useEffect(() => {
     fetchSerialNumber(); // Fetch only on first load

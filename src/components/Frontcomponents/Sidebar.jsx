@@ -28,7 +28,13 @@ const Sidebar = () => {
           className="p-4 hover:bg-gray-700 cursor-pointer"
           onClick={() => navigate("/item")}
         >
-          Items
+          Add Item
+        </li>
+        <li
+          className="p-4 hover:bg-gray-700 cursor-pointer"
+          onClick={() => navigate("/invoicedetails")}
+        >
+          Items Details
         </li>
         <li className="p-4 hover:bg-gray-700 cursor-pointer"
         onClick={() => navigate("/sale")}>
@@ -40,13 +46,8 @@ const Sidebar = () => {
         >
           Invoice Details
         </li>
-        <li
-          className="p-4 hover:bg-gray-700 cursor-pointer"
-          onClick={() => navigate("/invoicedetails")}
-        >
-          Items Details
-        </li>
-        <li
+       
+        {/* <li
           className="p-4 hover:bg-gray-700 cursor-pointer"
           onClick={() => navigate("/itemsdetails")}
         >
@@ -63,16 +64,16 @@ const Sidebar = () => {
           onClick={() => navigate("/staffpage")}
         >
           Staff/Trainers
-        </li>
+        </li> */}
 
         {/* Submenu for Products and Packages */}
-        <li
+        {/* <li
           className="p-4 hover:bg-gray-700 cursor-pointer"
           onClick={toggleSubmenu}
         >
           Products/Packages
-        </li>
-        {showSubmenu && (
+        </li> */}
+        {/* {showSubmenu && (
           <ul className="pl-8 bg-gray-800">
             <li
               className="p-2 hover:bg-gray-700 cursor-pointer"
@@ -87,9 +88,9 @@ const Sidebar = () => {
               Products
             </li>
           </ul>
-        )}
+        )} */}
 
-        <li
+        {/* <li
           className="p-4 hover:bg-gray-700 cursor-pointer"
           onClick={() => navigate("/settingspage")}
         >
@@ -101,7 +102,7 @@ const Sidebar = () => {
         >
           Users
         </li>
-        <li className="p-4 hover:bg-gray-700 cursor-pointer">Logout</li>
+        <li className="p-4 hover:bg-gray-700 cursor-pointer">Logout</li> */}
       </ul>
     </div>
   );

@@ -12,10 +12,10 @@ const InvoiceSchema = new mongoose.Schema({
       itemName: { type: String, required: true },
       category: { type: String, required: true },
       salePrice: { type: Number, required: true },
+      itemQuantity: { type: Number, required: true },
     },
   ],
   balance: { type: Number, required: true },
-  quantity: {type: Number, required: true}
 });
 
 const Invoice = mongoose.model("Invoice", InvoiceSchema);

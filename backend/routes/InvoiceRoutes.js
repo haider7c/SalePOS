@@ -5,13 +5,17 @@ const Invoice = require("../models/Invoice.js");
 // Create Invoice (POST Request)
 router.post("/create", async (req, res) => {
   try {
+    console.log(req.body); // Log incoming request data
     const invoice = new Invoice(req.body);
     await invoice.save();
     res.status(201).json({ message: "Invoice created successfully", invoice });
   } catch (error) {
-    res.status(500).json({ message: "Error creating invoice", error });
+    console.error("Error creating invoice:", error); // Log the error stack
+    res.status(500).json({ message: "Error creating invoice", error: error.message });
   }
 });
+
+
 
 // Get All Invoices (GET Request)
 router.get("/all", async (req, res) => {

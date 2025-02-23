@@ -4,7 +4,7 @@ import Sidebar from "../Frontcomponents/Sidebar.jsx";
 
 const Sale = () => {
   return (
-    <div className="flex">
+    <div className="flex min-h-screen">
       {/* Sidebar */}
       <Sidebar />
 
